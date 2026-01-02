@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:PriceLists.Core.Models;assembly=PriceLists.Core"
+             xmlns:vm="clr-namespace:PriceLists.Maui.ViewModels"
+             x:Class="PriceLists.Maui.Views.ListDetailPage"
+             x:DataType="vm:ListDetailViewModel"
+             Title="{Binding ListName}">
+    <ContentPage.Content>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <Label Text="{Binding ListName}"
+                   FontAttributes="Bold"
+                   FontSize="22" />
+
+            <SearchBar Placeholder="Buscar por código o descripción"
+                       Text="{Binding SearchText}" />
+
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                               IsVisible="{Binding IsBusy}" />
+
+            <Label Text="{Binding StatusMessage}"
+                   TextColor="Red" />
+
+            <CollectionView ItemsSource="{Binding Items}">
+                <CollectionView.Header>
+                    <Grid ColumnDefinitions="1.2*,2.5*,1*"
+                          Padding="0,0,0,6">
+                        <Label Text="Código" FontAttributes="Bold" Grid.Column="0" />
+                        <Label Text="Descripción" FontAttributes="Bold" Grid.Column="1" />
+                        <Label Text="Precio" FontAttributes="Bold" Grid.Column="2" HorizontalTextAlignment="End" />
+                    </Grid>
+                </CollectionView.Header>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:PriceItem">
+                        <Grid ColumnDefinitions="1.2*,2.5*,1*"
+                              Padding="0,6">
+                            <Label Grid.Column="0"
+                                   Text="{Binding Code}" />
+                            <Label Grid.Column="1"
+                                   Text="{Binding Description}" />
+                            <Label Grid.Column="2"
+                                   Text="{Binding UnitPrice, StringFormat='{}{0:N2}'}"
+                                   HorizontalTextAlignment="End" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+    </ContentPage.Content>
+</ContentPage>

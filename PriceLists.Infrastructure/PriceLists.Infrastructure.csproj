@@ -5,6 +5,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
     <PackageReference Include="ClosedXML" Version="0.103.0" />
     <ProjectReference Include="..\PriceLists.Core\PriceLists.Core.csproj" />
   </ItemGroup>

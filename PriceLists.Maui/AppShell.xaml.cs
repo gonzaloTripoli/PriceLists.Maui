@@ -8,6 +8,7 @@ namespace PriceLists.Maui
         {
             InitializeComponent();
             Routing.RegisterRoute(nameof(ImportPreviewPage), typeof(ImportPreviewPage));
+            Routing.RegisterRoute(nameof(ListDetailPage), typeof(ListDetailPage));
         }
     }
 }

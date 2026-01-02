@@ -1,0 +1,14 @@
+using PriceLists.Core.Models;
+
+namespace PriceLists.Core.Abstractions;
+
+public interface IPriceListRepository
+{
+    Task<List<PriceList>> GetAllAsync(CancellationToken ct = default);
+
+    Task<PriceList?> GetByIdAsync(Guid id, CancellationToken ct = default);
+
+    Task<List<PriceItem>> GetItemsAsync(Guid priceListId, CancellationToken ct = default);
+
+    Task<Guid> CreateListWithItemsAsync(PriceList list, IEnumerable<PriceItem> items, CancellationToken ct = default);
+}

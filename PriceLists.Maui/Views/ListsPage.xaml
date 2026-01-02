@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:PriceLists.Maui.ViewModels"
+             xmlns:models="clr-namespace:PriceLists.Core.Models;assembly=PriceLists.Core"
              x:Class="PriceLists.Maui.Views.ListsPage"
              x:DataType="vm:ListsViewModel"
              Title="Listas de precios">
@@ -12,14 +13,44 @@
                    FontSize="24"
                    SemanticProperties.HeadingLevel="Level1" />
 
-            <Label Text="Importa un archivo Excel para obtener un preview antes de guardarlo." />
-
             <Button Text="Importar Excel"
                     Command="{Binding ImportExcelCommand}" />
 
-            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" />
+            <Button Text="Ver preview (20 filas)"
+                    Command="{Binding PreviewExcelCommand}" />
 
-            <Label Text="{Binding StatusMessage}" TextColor="Red" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                               IsVisible="{Binding IsBusy}" />
+
+            <Label Text="{Binding StatusMessage}"
+                   TextColor="Red" />
+
+            <CollectionView ItemsSource="{Binding PriceLists}"
+                            SelectionMode="Single"
+                            SelectionChangedCommand="{Binding OpenListCommand}"
+                            SelectionChangedCommandParameter="{Binding CurrentSelection[0], Source={RelativeSource AncestorType=CollectionView}}"
+                            SelectionChanged="OnSelectionChanged">
+                <CollectionView.EmptyView>
+                    <Label Text="No hay listas importadas aún."
+                           TextColor="Gray" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:PriceList">
+                        <Frame Padding="12" Margin="0,6" BorderColor="{AppThemeBinding Light='#ccc', Dark='#555'}" HasShadow="False">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="{Binding Name}"
+                                       FontAttributes="Bold"
+                                       FontSize="18" />
+                                <Label Text="{Binding ImportedAtUtc, StringFormat='Importado: {0:dd/MM/yyyy HH:mm}'}"
+                                       TextColor="Gray" />
+                                <Label Text="{Binding SourceFileName}"
+                                       TextColor="Gray"
+                                       FontSize="12" />
+                            </VerticalStackLayout>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

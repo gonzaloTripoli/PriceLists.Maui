@@ -14,17 +14,17 @@ public class ExcelImportService : IExcelImportService
     private static readonly string[] DescriptionKeywords = ["DESCRIP", "DESCRIPCION", "DETALLE"];
     private static readonly string[] PriceKeywords = ["PRECIO", "PVP", "PRICE", "$"];
 
-    public Task<ImportPreview> ImportAsync(string filePath, CancellationToken ct = default)
+    public Task<ImportPreview> ImportAsync(string filePath, int? maxRows = 20, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(filePath))
         {
             throw new ArgumentException("El path del archivo es requerido.", nameof(filePath));
         }
 
-        return Task.Run(() => LoadPreview(filePath, ct), ct);
+        return Task.Run(() => LoadPreview(filePath, maxRows, ct), ct);
     }
 
-    private ImportPreview LoadPreview(string filePath, CancellationToken ct)
+    private ImportPreview LoadPreview(string filePath, int? maxRows, CancellationToken ct)
     {
         if (!File.Exists(filePath))
         {
@@ -103,7 +103,7 @@ public class ExcelImportService : IExcelImportService
         codeColumn ??= 1;
         priceColumn ??= descriptionColumn.Value + 1;
 
-        var previewRows = ReadPreviewRows(worksheet, headerRow.Value, codeColumn.Value, descriptionColumn.Value, priceColumn.Value, lastRow, ct);
+        var previewRows = ReadRows(worksheet, headerRow.Value, codeColumn.Value, descriptionColumn.Value, priceColumn.Value, lastRow, maxRows, ct);
 
         return new ImportPreview
         {
@@ -116,7 +116,15 @@ public class ExcelImportService : IExcelImportService
         };
     }
 
-    private static IReadOnlyList<PriceItemPreviewRow> ReadPreviewRows(IXLWorksheet worksheet, int headerRow, int codeColumn, int descriptionColumn, int priceColumn, int lastRow, CancellationToken ct)
+    private static IReadOnlyList<PriceItemPreviewRow> ReadRows(
+        IXLWorksheet worksheet,
+        int headerRow,
+        int codeColumn,
+        int descriptionColumn,
+        int priceColumn,
+        int lastRow,
+        int? maxRows,
+        CancellationToken ct)
     {
         var rows = new List<PriceItemPreviewRow>();
         var emptyInARow = 0;
@@ -151,7 +159,7 @@ public class ExcelImportService : IExcelImportService
                 Price = price
             });
 
-            if (rows.Count >= 20)
+            if (maxRows is not null && rows.Count >= maxRows)
             {
                 break;
             }
