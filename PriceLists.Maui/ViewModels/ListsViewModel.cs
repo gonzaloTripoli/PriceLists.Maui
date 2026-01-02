@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Storage;
 using PriceLists.Core.Abstractions;
@@ -18,16 +19,22 @@ public partial class ListsViewModel : ObservableObject
     private readonly IExcelImportService excelImportService;
     private readonly PreviewStore previewStore;
 
+    public ObservableCollection<PriceList> PriceLists { get; } = new();
+
     [ObservableProperty]
     private bool isBusy;
+
+    [ObservableProperty]
+    private bool isRefreshing;
 
     [ObservableProperty]
     private string? statusMessage;
 
     [ObservableProperty]
-    private ObservableCollection<PriceList> priceLists = new();
-    [ObservableProperty]
     private PriceList? selectedPriceList;
+
+    [ObservableProperty]
+    private bool isEmpty;
 
     public ListsViewModel(
         IPriceListRepository priceListRepository,
@@ -39,6 +46,8 @@ public partial class ListsViewModel : ObservableObject
         this.priceListService = priceListService;
         this.excelImportService = excelImportService;
         this.previewStore = previewStore;
+
+        PriceLists.CollectionChanged += (_, _) => UpdateStateFlags();
     }
 
 
@@ -53,20 +62,35 @@ public partial class ListsViewModel : ObservableObject
         SelectedPriceList = null;
     }
 
+    partial void OnStatusMessageChanged(string? value)
+    {
+        UpdateStateFlags();
+    }
+
     public async Task LoadAsync()
     {
         if (IsBusy)
         {
+            IsRefreshing = false;
             return;
         }
 
         try
         {
             IsBusy = true;
+            IsRefreshing = true;
             StatusMessage = "Cargando listas...";
 
             var lists = await priceListRepository.GetAllAsync();
-            PriceLists = new ObservableCollection<PriceList>(lists);
+
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                PriceLists.Clear();
+                foreach (var list in lists)
+                {
+                    PriceLists.Add(list);
+                }
+            });
 
             StatusMessage = string.Empty;
         }
@@ -77,6 +101,8 @@ public partial class ListsViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+            IsRefreshing = false;
+            UpdateStateFlags();
         }
     }
 
@@ -114,10 +140,10 @@ public partial class ListsViewModel : ObservableObject
             }
 
             StatusMessage = "Importando...";
-            await priceListService.ImportExcelAsNewListAsync(fileResult.FullPath, listName.Trim());
+            var createdList = await priceListService.ImportExcelAsNewListAsync(fileResult.FullPath, listName.Trim());
             StatusMessage = "Importación exitosa";
 
-            await LoadAsync();
+            AddOrUpdateList(createdList);
         }
         catch (Exception ex)
         {
@@ -127,6 +153,12 @@ public partial class ListsViewModel : ObservableObject
         {
             IsBusy = false;
         }
+    }
+
+    [RelayCommand]
+    private async Task RefreshAsync()
+    {
+        await LoadAsync();
     }
 
     [RelayCommand]
@@ -201,9 +233,9 @@ public partial class ListsViewModel : ObservableObject
             }
 
             var parameters = new Dictionary<string, object>
-        {
-            { "priceListId", selected.Id }
-        };
+            {
+                { "priceListId", selected.Id }
+            };
 
             await Shell.Current.GoToAsync(nameof(ListDetailPage), parameters);
         }
@@ -213,4 +245,43 @@ public partial class ListsViewModel : ObservableObject
         }
     }
 
+    private void AddOrUpdateList(PriceList? newList)
+    {
+        if (newList is null)
+        {
+            return;
+        }
+
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            var existingIndex = -1;
+            for (var i = 0; i < PriceLists.Count; i++)
+            {
+                if (PriceLists[i].Id == newList.Id)
+                {
+                    existingIndex = i;
+                    break;
+                }
+            }
+
+            if (existingIndex >= 0)
+            {
+                PriceLists.RemoveAt(existingIndex);
+            }
+
+            var insertIndex = 0;
+            while (insertIndex < PriceLists.Count && PriceLists[insertIndex].ImportedAtUtc > newList.ImportedAtUtc)
+            {
+                insertIndex++;
+            }
+
+            PriceLists.Insert(insertIndex, newList);
+            UpdateStateFlags();
+        });
+    }
+
+    private void UpdateStateFlags()
+    {
+        IsEmpty = !IsBusy && PriceLists.Count == 0 && string.IsNullOrWhiteSpace(StatusMessage);
+    }
 }

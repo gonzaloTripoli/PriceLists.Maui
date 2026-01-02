@@ -15,7 +15,7 @@ public class PriceListService : IPriceListService
         this.priceListRepository = priceListRepository;
     }
 
-    public async Task<Guid> ImportExcelAsNewListAsync(string filePath, string listName, CancellationToken ct = default)
+    public async Task<PriceList> ImportExcelAsNewListAsync(string filePath, string listName, CancellationToken ct = default)
     {
         var preview = await excelImportService.ImportAsync(filePath, maxRows: null, ct);
 
@@ -28,7 +28,9 @@ public class PriceListService : IPriceListService
 
         var priceItems = MapRowsToItems(preview.Rows);
 
-        return await priceListRepository.CreateListWithItemsAsync(priceList, priceItems, ct);
+        var newListId = await priceListRepository.CreateListWithItemsAsync(priceList, priceItems, ct);
+        priceList.Id = newListId;
+        return priceList;
     }
 
     private static IEnumerable<PriceItem> MapRowsToItems(IReadOnlyList<PriceItemPreviewRow> rows)
