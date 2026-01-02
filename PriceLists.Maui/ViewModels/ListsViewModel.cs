@@ -26,6 +26,8 @@ public partial class ListsViewModel : ObservableObject
 
     [ObservableProperty]
     private ObservableCollection<PriceList> priceLists = new();
+    [ObservableProperty]
+    private PriceList? selectedPriceList;
 
     public ListsViewModel(
         IPriceListRepository priceListRepository,
@@ -37,6 +39,18 @@ public partial class ListsViewModel : ObservableObject
         this.priceListService = priceListService;
         this.excelImportService = excelImportService;
         this.previewStore = previewStore;
+    }
+
+
+    partial void OnSelectedPriceListChanged(PriceList? value)
+    {
+        if (value is null) return;
+
+        // Disparamos navegación (fire and forget, porque el partial no puede ser async)
+        _ = OpenListAsync(value);
+
+        // Deselecciona para permitir tocar el mismo item nuevamente
+        SelectedPriceList = null;
     }
 
     public async Task LoadAsync()
@@ -174,22 +188,29 @@ public partial class ListsViewModel : ObservableObject
     [RelayCommand]
     private async Task OpenListAsync(PriceList selected)
     {
-        if (selected is null)
-        {
-            return;
-        }
+        if (selected is null || IsBusy) return;
 
-        if (Shell.Current is null)
+        try
         {
-            StatusMessage = "No se pudo navegar a la lista";
-            return;
-        }
+            IsBusy = true;
 
-        var parameters = new Dictionary<string, object>
+            if (Shell.Current is null)
+            {
+                StatusMessage = "No se pudo navegar a la lista";
+                return;
+            }
+
+            var parameters = new Dictionary<string, object>
         {
             { "priceListId", selected.Id }
         };
 
-        await Shell.Current.GoToAsync(nameof(ListDetailPage), parameters);
+            await Shell.Current.GoToAsync(nameof(ListDetailPage), parameters);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
+
 }

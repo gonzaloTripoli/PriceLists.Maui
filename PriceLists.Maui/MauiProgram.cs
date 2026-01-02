@@ -24,6 +24,10 @@ namespace PriceLists.Maui
                 });
 
             var dbPath = SqliteDbPathProvider.GetDbPath();
+            if (File.Exists(dbPath))
+            {
+                File.Delete(dbPath);
+            }
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlite($"Data Source={dbPath}"));
 
@@ -50,7 +54,9 @@ namespace PriceLists.Maui
             using (var scope = app.Services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                dbContext.Database.Migrate();
+                //dbContext.Database.Migrate();
+                dbContext.Database.EnsureCreated();
+
             }
 
             return app;

@@ -19,12 +19,4 @@ public partial class ListsPage : ContentPage
         base.OnAppearing();
         await viewModel.LoadAsync();
     }
-
-    private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (sender is CollectionView collectionView)
-        {
-            collectionView.SelectedItem = null;
-        }
-    }
 }
