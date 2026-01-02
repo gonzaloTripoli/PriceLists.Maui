@@ -3,11 +3,11 @@ using PriceLists.Maui.ViewModels;
 
 namespace PriceLists.Maui.Views;
 
-public partial class ListsPage : ContentPage
+public partial class ListDetailPage : ContentPage
 {
-    private readonly ListsViewModel viewModel;
+    private readonly ListDetailViewModel viewModel;
 
-    public ListsPage(ListsViewModel viewModel)
+    public ListDetailPage(ListDetailViewModel viewModel)
     {
         InitializeComponent();
         this.viewModel = viewModel;
