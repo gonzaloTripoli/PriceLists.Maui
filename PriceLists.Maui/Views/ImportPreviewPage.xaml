@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:PriceLists.Maui.ViewModels"
+             xmlns:models="clr-namespace:PriceLists.Core.Models;assembly=PriceLists.Core"
+             x:Class="PriceLists.Maui.Views.ImportPreviewPage"
+             x:DataType="vm:ImportPreviewViewModel"
+             Title="Preview">
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="12">
+            <Label Text="Preview"
+                   FontAttributes="Bold"
+                   FontSize="22"
+                   SemanticProperties.HeadingLevel="Level1" />
+
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                <Label Text="Hoja:" Grid.Row="0" Grid.Column="0" FontAttributes="Bold" />
+                <Label Text="{Binding SheetName}" Grid.Row="0" Grid.Column="1" />
+
+                <Label Text="Fila de encabezado:" Grid.Row="1" Grid.Column="0" FontAttributes="Bold" />
+                <Label Text="{Binding HeaderRow}" Grid.Row="1" Grid.Column="1" />
+
+                <Label Text="Columna código:" Grid.Row="2" Grid.Column="0" FontAttributes="Bold" />
+                <Label Text="{Binding CodeColumn}" Grid.Row="2" Grid.Column="1" />
+
+                <Label Text="Columna descripción:" Grid.Row="3" Grid.Column="0" FontAttributes="Bold" />
+                <Label Text="{Binding DescriptionColumn}" Grid.Row="3" Grid.Column="1" />
+
+                <Label Text="Columna precio:" Grid.Row="4" Grid.Column="0" FontAttributes="Bold" />
+                <Label Text="{Binding PriceColumn}" Grid.Row="4" Grid.Column="1" />
+            </Grid>
+
+            <CollectionView ItemsSource="{Binding Rows}" HeightRequest="500">
+                <CollectionView.Header>
+                    <Grid ColumnDefinitions="1*,2*,1*" Padding="0,0,0,6">
+                        <Label Text="Código" FontAttributes="Bold" Grid.Column="0" />
+                        <Label Text="Descripción" FontAttributes="Bold" Grid.Column="1" />
+                        <Label Text="Precio" FontAttributes="Bold" Grid.Column="2" HorizontalTextAlignment="End" />
+                    </Grid>
+                </CollectionView.Header>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:PriceItemPreviewRow">
+                        <Grid ColumnDefinitions="1*,2*,1*" Padding="0,6">
+                            <Label Text="{Binding Code}" Grid.Column="0" />
+                            <Label Text="{Binding Description}" Grid.Column="1" />
+                            <Label Text="{Binding Price, StringFormat='{}{0:N2}'}" Grid.Column="2" HorizontalTextAlignment="End" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Button Text="Volver" Clicked="OnBackClicked" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
