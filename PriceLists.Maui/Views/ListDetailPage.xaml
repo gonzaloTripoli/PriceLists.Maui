@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:models="clr-namespace:PriceLists.Core.Models;assembly=PriceLists.Core"
              xmlns:vm="clr-namespace:PriceLists.Maui.ViewModels"
              x:Class="PriceLists.Maui.Views.ListDetailPage"
+             x:Name="ListDetailPageView"
              x:DataType="vm:ListDetailViewModel"
              Title="{Binding ListName}">
 
@@ -12,9 +12,15 @@
             <Setter Property="StrokeThickness" Value="1" />
             <Setter Property="Stroke" Value="{AppThemeBinding Light='#E5E7EB', Dark='#2F2F2F'}" />
             <Setter Property="Background" Value="{AppThemeBinding Light='#FFFFFF', Dark='#161616'}" />
+            <Setter Property="Padding" Value="18" />
             <Setter Property="StrokeShape">
                 <Setter.Value>
                     <RoundRectangle CornerRadius="16" />
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Shadow">
+                <Setter.Value>
+                    <Shadow Radius="10" Opacity="0.15" Brush="{AppThemeBinding Light='#171717', Dark='#000000'}" />
                 </Setter.Value>
             </Setter>
         </Style>
@@ -24,13 +30,35 @@
             <Setter Property="TextColor" Value="{AppThemeBinding Light='#6B7280', Dark='#9CA3AF'}" />
         </Style>
 
-        <Style x:Key="BadgeBorderStyle" TargetType="Border">
+        <Style x:Key="CodeBadgeStyle" TargetType="Border">
             <Setter Property="StrokeThickness" Value="0" />
             <Setter Property="Background" Value="{AppThemeBinding Light='#EEF2FF', Dark='#1E1B4B'}" />
-            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="StrokeShape">
+                <Setter.Value>
+                    <RoundRectangle CornerRadius="14" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="BadgeBorderStyle" TargetType="Border">
+            <Setter Property="StrokeThickness" Value="0" />
+            <Setter Property="Background" Value="{AppThemeBinding Light='#F5F3FF', Dark='#312E81'}" />
+            <Setter Property="Padding" Value="10,5" />
             <Setter Property="StrokeShape">
                 <Setter.Value>
                     <RoundRectangle CornerRadius="12" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="StatusBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{AppThemeBinding Light='#FEF3C7', Dark='#3B2F1B'}" />
+            <Setter Property="StrokeThickness" Value="0" />
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="StrokeShape">
+                <Setter.Value>
+                    <RoundRectangle CornerRadius="10" />
                 </Setter.Value>
             </Setter>
         </Style>
@@ -38,17 +66,21 @@
 
 
     <ContentPage.Content>
-        <Grid RowDefinitions="Auto,*" Padding="20" ColumnSpacing="0">
+        <Grid RowDefinitions="Auto,*" Padding="24" ColumnSpacing="0">
             <VerticalStackLayout Spacing="12">
                 <Label Text="{Binding ListName}"
                        FontAttributes="Bold"
-                       FontSize="26"
-                       HorizontalTextAlignment="Start" />
+                       FontSize="28"
+                       SemanticProperties.HeadingLevel="Level1" />
 
-                <HorizontalStackLayout Spacing="12" VerticalOptions="Center">
+                <HorizontalStackLayout Spacing="10"
+                                       VerticalOptions="Center">
                     <Label Text="{Binding FilteredItemsCount, StringFormat='{}{0} productos'}"
                            FontAttributes="Bold"
                            FontSize="14" />
+                    <Label Text="{Binding TotalItemsCount, StringFormat='de {0} totales'}"
+                           Style="{StaticResource CaptionLabel}" />
+
                     <Border Style="{StaticResource BadgeBorderStyle}"
                             IsVisible="{Binding SectionLabel, Converter={StaticResource StringNotEmptyConverter}}">
                         <HorizontalStackLayout Spacing="6">
@@ -61,23 +93,40 @@
                                    Style="{StaticResource CaptionLabel}" />
                         </HorizontalStackLayout>
                     </Border>
+
+                    <Border Style="{StaticResource BadgeBorderStyle}"
+                            IsVisible="{Binding SaveStatusMessage, Converter={StaticResource StringNotEmptyConverter}}">
+                        <HorizontalStackLayout Spacing="8">
+                            <ActivityIndicator IsRunning="{Binding IsSaving}"
+                                               IsVisible="{Binding IsSaving}"
+                                               Color="{AppThemeBinding Light='#4338CA', Dark='#C7D2FE'}"
+                                               WidthRequest="18"
+                                               HeightRequest="18" />
+                            <Label Text="{Binding SaveStatusMessage}"
+                                   FontAttributes="Bold"
+                                   FontSize="12"
+                                   TextColor="{AppThemeBinding Light='#4338CA', Dark='#C7D2FE'}" />
+                        </HorizontalStackLayout>
+                    </Border>
                 </HorizontalStackLayout>
 
                 <SearchBar Placeholder="Buscar por código o descripción"
                            Text="{Binding SearchText}"
-                           CancelButtonColor="{AppThemeBinding Light='#6366F1', Dark='#A5B4FC'}" />
+                           CancelButtonColor="{AppThemeBinding Light='#4338CA', Dark='#C7D2FE'}"
+                           FontSize="16"
+                           HeightRequest="52" />
 
-                <Border Background="{AppThemeBinding Light='#F4F4F5', Dark='#1F2937'}"
-                        Padding="12"
-                        StrokeThickness="0"
+                <Border Style="{StaticResource StatusBorderStyle}"
                         IsVisible="{Binding StatusMessage, Converter={StaticResource StringNotEmptyConverter}}">
                     <Label Text="{Binding StatusMessage}"
-                           TextColor="{AppThemeBinding Light='#6B7280', Dark='#D1D5DB'}" />
+                           TextColor="{AppThemeBinding Light='#92400E', Dark='#FDE68A'}"
+                           LineBreakMode="WordWrap" />
                 </Border>
             </VerticalStackLayout>
 
             <Grid Grid.Row="1">
-                <CollectionView ItemsSource="{Binding Items}"
+                <CollectionView x:Name="ItemsCollection"
+                                ItemsSource="{Binding Items}"
                                 SelectionMode="None"
                                 ItemsLayout="VerticalList"
                                 Margin="0,12,0,0">
@@ -95,55 +144,65 @@
                     </CollectionView.EmptyView>
 
                     <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="models:PriceItem">
+                        <DataTemplate x:DataType="vm:PriceItemRowViewModel">
                             <Border Style="{StaticResource CardBorderStyle}"
-                                    Padding="16"
-                                    Margin="0,6">
+                                    Margin="0,8">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding BindingContext.EditPriceCommand, Source={x:Reference ListDetailPageView}}"
+                                                          CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
                                 <Grid ColumnDefinitions="*,Auto"
                                       RowDefinitions="Auto,Auto,Auto"
                                       ColumnSpacing="12"
                                       RowSpacing="6">
-                                    <Border Style="{StaticResource BadgeBorderStyle}"
-                                            Grid.Row="0"
-                                            Grid.Column="0"
-                                            VerticalOptions="Start">
-                                        <Label Text="{Binding Code, TargetNullValue='Sin código'}"
+                                    <VerticalStackLayout Grid.Row="0"
+                                                         Grid.Column="0"
+                                                         Grid.RowSpan="3"
+                                                         Spacing="8">
+                                        <Border Style="{StaticResource CodeBadgeStyle}">
+                                            <Label Text="{Binding Code, TargetNullValue='Sin código'}"
+                                                   FontAttributes="Bold"
+                                                   FontSize="13"
+                                                   TextColor="{AppThemeBinding Light='#4338CA', Dark='#C7D2FE'}" />
+                                        </Border>
+
+                                        <Label Text="{Binding Description}"
                                                FontAttributes="Bold"
-                                               FontSize="13"
-                                               TextColor="{AppThemeBinding Light='#4338CA', Dark='#C7D2FE'}" />
-                                    </Border>
+                                               FontSize="18"
+                                               LineBreakMode="TailTruncation"
+                                               MaxLines="2" />
 
-                                    <Label Grid.Row="1"
-                                           Grid.Column="0"
-                                           Text="{Binding Description}"
-                                           FontAttributes="Bold"
-                                           FontSize="17"
-                                           LineBreakMode="TailTruncation"
-                                           MaxLines="2" />
-
-                                    <HorizontalStackLayout Grid.Row="2"
-                                                           Grid.Column="0"
-                                                           Spacing="6"
-                                                           IsVisible="{Binding SectionName, Converter={StaticResource StringNotEmptyConverter}}">
-                                        <BoxView WidthRequest="6"
-                                                 HeightRequest="6"
-                                                 VerticalOptions="Center"
-                                                 BackgroundColor="{AppThemeBinding Light='#A855F7', Dark='#C084FC'}"
-                                                 CornerRadius="3" />
-                                        <Label Text="{Binding SectionName}"
-                                               Style="{StaticResource CaptionLabel}" />
-                                    </HorizontalStackLayout>
+                                        <HorizontalStackLayout Spacing="6"
+                                                               IsVisible="{Binding SectionName, Converter={StaticResource StringNotEmptyConverter}}">
+                                            <BoxView WidthRequest="6"
+                                                     HeightRequest="6"
+                                                     VerticalOptions="Center"
+                                                     BackgroundColor="{AppThemeBinding Light='#A855F7', Dark='#C084FC'}"
+                                                     CornerRadius="3" />
+                                            <Label Text="{Binding SectionName}"
+                                                   Style="{StaticResource CaptionLabel}" />
+                                        </HorizontalStackLayout>
+                                    </VerticalStackLayout>
 
                                     <VerticalStackLayout Grid.Row="0"
                                                          Grid.Column="1"
                                                          Grid.RowSpan="3"
-                                                         Spacing="4"
+                                                         Spacing="10"
                                                          HorizontalOptions="End"
                                                          VerticalOptions="Center">
-                                        <Label Text="{Binding UnitPrice, Converter={StaticResource DecimalToCurrencyConverter}}"
+                                        <Label Text="{Binding UnitPrice, Converter={StaticResource DecimalToArsCurrencyConverter}}"
                                                FontAttributes="Bold"
-                                               FontSize="20"
-                                               HorizontalTextAlignment="End" />
+                                               FontSize="22"
+                                               HorizontalTextAlignment="End"
+                                               TextColor="{AppThemeBinding Light='#111827', Dark='#E5E7EB'}" />
+                                        <Button Text="Editar"
+                                                Padding="14,8"
+                                                FontSize="13"
+                                                CornerRadius="10"
+                                                Command="{Binding BindingContext.EditPriceCommand, Source={x:Reference ListDetailPageView}}"
+                                                CommandParameter="{Binding .}"
+                                                BackgroundColor="{AppThemeBinding Light='#EEF2FF', Dark='#1E1B4B'}"
+                                                TextColor="{AppThemeBinding Light='#4338CA', Dark='#C7D2FE'}" />
                                     </VerticalStackLayout>
                                 </Grid>
                             </Border>

@@ -26,10 +26,11 @@ public class PriceListService : IPriceListService
             ImportedAtUtc = DateTime.UtcNow
         };
 
-        var priceItems = MapRowsToItems(preview.Rows);
+        var priceItems = MapRowsToItems(preview.Rows).ToList();
 
         var newListId = await priceListRepository.CreateListWithItemsAsync(priceList, priceItems, ct);
         priceList.Id = newListId;
+        priceList.Items = priceItems;
         return priceList;
     }
 
