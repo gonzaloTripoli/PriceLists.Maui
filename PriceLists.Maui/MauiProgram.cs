@@ -24,10 +24,7 @@ namespace PriceLists.Maui
                 });
 
             var dbPath = SqliteDbPathProvider.GetDbPath();
-            if (File.Exists(dbPath))
-            {
-                File.Delete(dbPath);
-            }
+         
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlite($"Data Source={dbPath}"));
 
