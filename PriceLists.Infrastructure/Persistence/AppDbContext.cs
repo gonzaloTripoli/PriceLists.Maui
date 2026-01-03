@@ -40,6 +40,9 @@ public class AppDbContext : DbContext
                 .HasMaxLength(200);
             entity.Property(pi => pi.SectionName)
                 .HasMaxLength(200);
+            entity.Property(pi => pi.UnitPrice)
+                .IsRequired()
+                .HasColumnType("decimal(18,2)");
 
             entity.HasIndex(pi => new { pi.PriceListId, pi.Code });
             entity.HasIndex(pi => new { pi.PriceListId, pi.Description });

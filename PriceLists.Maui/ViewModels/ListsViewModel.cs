@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
+using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Maui.ApplicationModel;
@@ -18,8 +20,10 @@ public partial class ListsViewModel : ObservableObject
     private readonly IPriceListService priceListService;
     private readonly IExcelImportService excelImportService;
     private readonly PreviewStore previewStore;
+    private List<PriceListSummary> allLists = new();
+    private CancellationTokenSource? filterCancellationTokenSource;
 
-    public ObservableCollection<PriceList> PriceLists { get; } = new();
+    public ObservableCollection<PriceListSummary> PriceLists { get; } = new();
 
     [ObservableProperty]
     private bool isBusy;
@@ -31,10 +35,19 @@ public partial class ListsViewModel : ObservableObject
     private string? statusMessage;
 
     [ObservableProperty]
-    private PriceList? selectedPriceList;
+    private PriceListSummary? selectedPriceList;
 
     [ObservableProperty]
     private bool isEmpty;
+
+    [ObservableProperty]
+    private string? searchText;
+
+    [ObservableProperty]
+    private int totalListsCount;
+
+    [ObservableProperty]
+    private int filteredListsCount;
 
     public ListsViewModel(
         IPriceListRepository priceListRepository,
@@ -51,7 +64,7 @@ public partial class ListsViewModel : ObservableObject
     }
 
 
-    partial void OnSelectedPriceListChanged(PriceList? value)
+    partial void OnSelectedPriceListChanged(PriceListSummary? value)
     {
         if (value is null) return;
 
@@ -65,6 +78,39 @@ public partial class ListsViewModel : ObservableObject
     partial void OnStatusMessageChanged(string? value)
     {
         UpdateStateFlags();
+    }
+
+    partial void OnSearchTextChanged(string? value)
+    {
+        _ = DebounceFilterAsync();
+    }
+
+    private async Task DebounceFilterAsync()
+    {
+        filterCancellationTokenSource?.Cancel();
+        filterCancellationTokenSource?.Dispose();
+
+        var tokenSource = new CancellationTokenSource();
+        filterCancellationTokenSource = tokenSource;
+        var token = tokenSource.Token;
+
+        try
+        {
+            await Task.Delay(200, token);
+            await ApplyFilterAsync(token);
+        }
+        catch (TaskCanceledException)
+        {
+            // Ignored
+        }
+        finally
+        {
+            tokenSource.Dispose();
+            if (filterCancellationTokenSource == tokenSource)
+            {
+                filterCancellationTokenSource = null;
+            }
+        }
     }
 
     public async Task LoadAsync()
@@ -81,16 +127,9 @@ public partial class ListsViewModel : ObservableObject
             IsRefreshing = true;
             StatusMessage = "Cargando listas...";
 
-            var lists = await priceListRepository.GetAllAsync();
-
-            await MainThread.InvokeOnMainThreadAsync(() =>
-            {
-                PriceLists.Clear();
-                foreach (var list in lists)
-                {
-                    PriceLists.Add(list);
-                }
-            });
+            allLists = await priceListRepository.GetAllWithCountsAsync();
+            TotalListsCount = allLists.Count;
+            await ApplyFilterAsync();
 
             StatusMessage = string.Empty;
         }
@@ -206,6 +245,39 @@ public partial class ListsViewModel : ObservableObject
         }
     }
 
+    private async Task ApplyFilterAsync(CancellationToken ct = default)
+    {
+        var query = SearchText?.Trim();
+        IEnumerable<PriceListSummary> filtered = allLists;
+
+        ct.ThrowIfCancellationRequested();
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            filtered = filtered.Where(list =>
+                (!string.IsNullOrWhiteSpace(list.Name) && list.Name.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrWhiteSpace(list.SourceFileName) && list.SourceFileName.Contains(query, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        var filteredLists = filtered
+            .OrderByDescending(x => x.ImportedAtUtc)
+            .ToList();
+
+        ct.ThrowIfCancellationRequested();
+
+        await MainThread.InvokeOnMainThreadAsync(() =>
+        {
+            PriceLists.Clear();
+            foreach (var list in filteredLists)
+            {
+                PriceLists.Add(list);
+            }
+
+            FilteredListsCount = PriceLists.Count;
+            UpdateStateFlags();
+        });
+    }
+
     private static FilePickerFileType GetExcelFileType()
     {
         return new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
@@ -218,7 +290,7 @@ public partial class ListsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task OpenListAsync(PriceList selected)
+    private async Task OpenListAsync(PriceListSummary selected)
     {
         if (selected is null || IsBusy) return;
 
@@ -252,32 +324,51 @@ public partial class ListsViewModel : ObservableObject
             return;
         }
 
-        MainThread.BeginInvokeOnMainThread(() =>
+        var summary = ToSummary(newList);
+        MainThread.BeginInvokeOnMainThread(async () =>
         {
-            var existingIndex = -1;
-            for (var i = 0; i < PriceLists.Count; i++)
-            {
-                if (PriceLists[i].Id == newList.Id)
-                {
-                    existingIndex = i;
-                    break;
-                }
-            }
-
-            if (existingIndex >= 0)
-            {
-                PriceLists.RemoveAt(existingIndex);
-            }
-
-            var insertIndex = 0;
-            while (insertIndex < PriceLists.Count && PriceLists[insertIndex].ImportedAtUtc > newList.ImportedAtUtc)
-            {
-                insertIndex++;
-            }
-
-            PriceLists.Insert(insertIndex, newList);
-            UpdateStateFlags();
+            UpsertSummary(allLists, summary);
+            TotalListsCount = allLists.Count;
+            await ApplyFilterAsync();
         });
+    }
+
+    private static void UpsertSummary(ICollection<PriceListSummary> target, PriceListSummary summary)
+    {
+        var existing = target.FirstOrDefault(x => x.Id == summary.Id);
+        if (existing is not null)
+        {
+            target.Remove(existing);
+        }
+
+        if (target is List<PriceListSummary> list)
+        {
+            var insertIndex = list.FindIndex(x => x.ImportedAtUtc <= summary.ImportedAtUtc);
+            if (insertIndex < 0)
+            {
+                list.Add(summary);
+            }
+            else
+            {
+                list.Insert(insertIndex, summary);
+            }
+        }
+        else
+        {
+            target.Add(summary);
+        }
+    }
+
+    private static PriceListSummary ToSummary(PriceList list)
+    {
+        return new PriceListSummary
+        {
+            Id = list.Id,
+            Name = list.Name,
+            SourceFileName = list.SourceFileName,
+            ImportedAtUtc = list.ImportedAtUtc,
+            ItemsCount = list.Items?.Count ?? 0
+        };
     }
 
     private void UpdateStateFlags()
