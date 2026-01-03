@@ -2,10 +2,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:PriceLists.Maui.ViewModels"
              xmlns:models="clr-namespace:PriceLists.Core.Models;assembly=PriceLists.Core"
-             xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes"
              x:Class="PriceLists.Maui.Views.ListsPage"
              x:DataType="vm:ListsViewModel"
              Title="Listas de precios">
+
     <ContentPage.Resources>
         <Style x:Key="CardBorderStyle" TargetType="Border">
             <Setter Property="StrokeThickness" Value="1" />
@@ -13,7 +13,7 @@
             <Setter Property="Background" Value="{AppThemeBinding Light='#FFFFFF', Dark='#161616'}" />
             <Setter Property="StrokeShape">
                 <Setter.Value>
-                    <shapes:RoundRectangle CornerRadius="18" />
+                    <RoundRectangle CornerRadius="18" />
                 </Setter.Value>
             </Setter>
         </Style>
