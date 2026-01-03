@@ -7,6 +7,8 @@ public partial class ListsPage : ContentPage
 {
     private readonly ListsViewModel viewModel;
 
+    private bool _loaded;
+
     public ListsPage(ListsViewModel viewModel)
     {
         InitializeComponent();
@@ -17,6 +19,10 @@ public partial class ListsPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+
+        if (_loaded) return;
+        _loaded = true;
+
         await viewModel.LoadAsync();
     }
 }

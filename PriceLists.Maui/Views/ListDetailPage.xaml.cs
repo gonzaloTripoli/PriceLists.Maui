@@ -17,6 +17,16 @@ public partial class ListDetailPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await viewModel.LoadAsync();
+
+        try
+        {
+            await viewModel.LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex);
+            await DisplayAlert("Error", ex.Message, "OK");
+        }
     }
+
 }
